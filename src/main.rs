@@ -7,7 +7,8 @@ use tokio::runtime::Runtime;
 use std::ffi::OsString;
 use windows_service::service_dispatcher;
 
-const SERVICE_NAME: &str = "Minosse - Process Monitor Service";
+const SERVICE_NAME: &str = "minosse";
+const SERVICE_DISPLAY_NAME: &str = "Minosse - Process Monitor Service";
 define_windows_service!(ffi_service_main, service_main);
 
 #[cfg(windows)]
@@ -109,7 +110,7 @@ fn install_service(rules_path: Option<&str>) -> windows_service::Result<()> {
 
     let service_info = ServiceInfo {
         name: SERVICE_NAME.into(),
-        display_name: SERVICE_NAME.into(),
+        display_name: SERVICE_DISPLAY_NAME.into(),
         service_type: ServiceType::OWN_PROCESS,
         start_type: ServiceStartType::AutoStart,
         error_control: ServiceErrorControl::Normal,
