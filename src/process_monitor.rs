@@ -117,8 +117,21 @@ impl ProcessRuleSet {
     }
 }
 
-async fn monitor_new_processes(rule_set: &ProcessRuleSet, wmi_con: &WMIConnection) -> anyhow::Result<()> {
+async fn monitor_new_processes(rule_set: &ProcessRuleSet) -> anyhow::Result<()> {
+    let wmi_con = WMIConnection::new(COMLibrary::new()?)?;
+
+    // Start receiving new processes before checking running processes or
+    // there will be a period where some new processes get ignored
     let mut process_start_stream = wmi_con.async_notification::<ProcessStartTrace>()?;
+
+    // Apply rules to all running processes
+    let running_process: Vec<WinProcess> = wmi_con.async_query().await?;
+    println!("Processes: {:?}", running_process.len());
+    running_process.into_iter().for_each(|process| {
+        let process_info: ProcessInfo = process.into();
+        rule_set.apply(&process_info)
+    });
+
     while let Some(Ok(event)) = process_start_stream.next().await {
         let process_info: ProcessInfo = event.into();
         rule_set.apply(&process_info);
@@ -128,18 +141,10 @@ async fn monitor_new_processes(rule_set: &ProcessRuleSet, wmi_con: &WMIConnectio
 }
 
 pub(crate) async fn rule_applier(rule_file_path: &str, shutdown_recv: &mut UnboundedReceiver<()>) -> anyhow::Result<()> {
-    let wmi_con = WMIConnection::new(COMLibrary::new()?)?;
     let rule_set: ProcessRuleSet = std::fs::File::open(rule_file_path)
                                         .map(|file| serde_json::from_reader(file)
                                         .unwrap_or(ProcessRuleSet { rules: vec!() }))
                                         .unwrap_or(ProcessRuleSet { rules: vec!() });
-
-    // Apply rules to all running processes
-    let running_process: Vec<WinProcess> = wmi_con.async_query().await?;
-    running_process.into_iter().for_each(|process| {
-        let process_info: ProcessInfo = process.into();
-        rule_set.apply(&process_info)
-    });
 
     tokio::select! {
         // Apply rules to new processes
