@@ -104,7 +104,15 @@
                             Source='wix\License.rtf'
                             KeyPath='yes'/>
                     </Component>
-                    
+
+                    <Component Id='Config' Guid='*'>
+                        <File Id='ConfigFile'
+                            Name='example_rules.json'
+                            DiskId='1'
+                            Source='wix\rules.json'
+                            KeyPath='yes'/>
+                    </Component>
+
                     <Directory Id='Bin' Name='bin'>
                         <Component Id='Path' Guid='EFB1FA4B-FA11-46F0-8208-13F2E3F1DFEF' KeyPath='yes'>
                             <Environment
@@ -163,6 +171,8 @@
             -->
             <ComponentRef Id='License'/>
             
+            <ComponentRef Id='Config'/>
+
             <ComponentRef Id='binary0'/>
 
             <Feature
