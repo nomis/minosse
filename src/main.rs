@@ -46,7 +46,7 @@ fn service_main(_: Vec<OsString>) {
     let args = std::env::args().collect::<Vec<_>>();
     let rules_path = args.get(2).map(|s| s.as_str()).unwrap_or("rules.json");
     
-    let error_code = if rt.block_on(rule_applier(rules_path, &mut shutdown_recv)).is_err() {
+    let error_code = if rt.block_on(rule_applier(rules_path, &mut shutdown_recv, false)).is_err() {
         1
     } else {
         0
@@ -61,7 +61,16 @@ fn service_main(_: Vec<OsString>) {
         wait_hint: Duration::default(),
         process_id: None,
     }).unwrap();
+}
 
+#[cfg(windows)]
+fn test_run(rules_path: &str) {
+    use tokio::sync::mpsc;
+
+    let rt = Runtime::new().unwrap();
+    let (_shutdown_send, mut shutdown_recv) = mpsc::unbounded_channel();
+
+    let _ = rt.block_on(rule_applier(rules_path, &mut shutdown_recv, true));
 }
 
 #[cfg(windows)]
@@ -81,6 +90,10 @@ fn main() -> Result<(), windows_service::Error> {
                 return Ok(());
             },
             "run" => {},
+            "test" => {
+                test_run(args.get(2).map(|s| s.as_str()).unwrap_or("rules.json"));
+                return Ok(());
+            },
             _ => {
                 println!("Unknown command");
                 return Ok(());

@@ -96,7 +96,9 @@ impl ProcessRule {
                 }
             }
 
-            println!("Applied rule {:?} to process {:?}", self.pattern.as_str(), process.process_name)
+            println!("Applied rule {:?} (priority={:?} affinity={:?}) to process {:?} {:?}",
+                self.pattern.as_str(), self.priority, self.core_affinity,
+                process.process_id, process.process_name)
         }
         Ok(())
     }
@@ -117,7 +119,7 @@ impl ProcessRuleSet {
     }
 }
 
-async fn monitor_new_processes(rule_set: &ProcessRuleSet) -> anyhow::Result<()> {
+async fn monitor_new_processes(rule_set: &ProcessRuleSet, once: bool) -> anyhow::Result<()> {
     let wmi_con = WMIConnection::new(COMLibrary::new()?)?;
 
     // Start receiving new processes before checking running processes or
@@ -132,23 +134,29 @@ async fn monitor_new_processes(rule_set: &ProcessRuleSet) -> anyhow::Result<()> 
         rule_set.apply(&process_info)
     });
 
-    while let Some(Ok(event)) = process_start_stream.next().await {
-        let process_info: ProcessInfo = event.into();
-        rule_set.apply(&process_info);
+    if !once {
+        while let Some(Ok(event)) = process_start_stream.next().await {
+            let process_info: ProcessInfo = event.into();
+            rule_set.apply(&process_info);
+        }
     }
 
     Ok(())
 }
 
-pub(crate) async fn rule_applier(rule_file_path: &str, shutdown_recv: &mut UnboundedReceiver<()>) -> anyhow::Result<()> {
+pub(crate) async fn rule_applier(rule_file_path: &str, shutdown_recv: &mut UnboundedReceiver<()>, once: bool) -> anyhow::Result<()> {
     let rule_set: ProcessRuleSet = std::fs::File::open(rule_file_path)
                                         .map(|file| serde_json::from_reader(file)
-                                        .unwrap_or(ProcessRuleSet { rules: vec!() }))
+                                            .map_err(|err| { println!("{}: {}", rule_file_path, err) })
+                                            .unwrap_or(ProcessRuleSet { rules: vec!() }))
+                                        .map_err(|err| { println!("{}: {}", rule_file_path, err) })
                                         .unwrap_or(ProcessRuleSet { rules: vec!() });
+
+    println!("Rules: {:?}", rule_set.rules.len());
 
     tokio::select! {
         // Apply rules to new processes
-        output = monitor_new_processes(&rule_set, &wmi_con) => output,
+        output = monitor_new_processes(&rule_set, once) => output,
         // Or wait for shutdown signal
         _ = shutdown_recv.recv() => {
             println!("Shutting down process monitor");
