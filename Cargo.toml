@@ -1,6 +1,6 @@
 [package]
 name = "minosse"
-version = "0.1.0"
+version = "0.1.0-sa.1"
 edition = "2021"
 authors = ["Jacopo Libe <jacopo.libe@gmial.com>"]
 description = "A Windows service that monitors process and changes their affinity and priority based on user defined rules."
