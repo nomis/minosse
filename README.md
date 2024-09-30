@@ -21,7 +21,7 @@ Rules are evaluated in the order they are defined in the configuration file. All
     "rules":
     [
         {
-            "pattern": "audiodg\\.exe",
+            "pattern": "^audiodg\\.exe$",
             "priority": "high",
             "core_affinity": [15]
         }

@@ -1,4 +1,4 @@
 { "rules": [
- { "pattern": "CalculatorApp\\.exe", "priority": "low", "core_affinity": [2] },
- { "pattern": "notepad\\.exe", "priority": "high" }
+ { "pattern": "^CalculatorApp\\.exe$", "priority": "low", "core_affinity": [2] },
+ { "pattern": "^notepad\\.exe$", "priority": "high" }
 ] }
