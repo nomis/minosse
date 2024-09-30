@@ -11,8 +11,8 @@ Minosse is a simple windows service that monitors running processes and sets the
 
 The configuration file is a JSON file that contains an array of rules. Each rule has the following properties:
 - `pattern`: The regex pattern that will be used to match the process name, e.g. `audiodg\.exe`
-- `priority`: The priority to set for the process, e.g. `High`
-- `affinity`: An array of CPU cores to set the affinity to, e.g. `[0, 1]`
+- `priority`: The priority to set for the process, e.g. `high`
+- `core_affinity`: An array of CPU cores to set the affinity to, e.g. `[0, 1]`
 Rules are evaluated in the order they are defined in the configuration file. All rules that matches a process will be applied.
 
 ## Example
@@ -22,8 +22,8 @@ Rules are evaluated in the order they are defined in the configuration file. All
     [
         {
             "pattern": "audiodg\\.exe",
-            "priority": "High",
-            "affinity": [15]
+            "priority": "high",
+            "core_affinity": [15]
         }
     ]
 }
